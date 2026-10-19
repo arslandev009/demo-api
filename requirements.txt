@@ -1,0 +1,2 @@
+docqa[api] @ git+https://github.com/arslandev009/a1-rag-docqa.git@a2fd2d6507d5e276551e0389e99fc1626dcb8e1e
+git+https://github.com/arslandev009/llm-client.git@0415e50337a9006ad2814d55997712156f71469f
