@@ -9,6 +9,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY app ./app
+COPY static ./static
 COPY prices.json .
 RUN useradd --create-home app && chown -R app /app
 USER app

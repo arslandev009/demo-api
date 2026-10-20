@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Ledgerly Support Assistant · RAG demo</title>
+  <meta name="description" content="A production-style RAG assistant on a fictional company's messy docs: hybrid search, cited answers, honest abstention, no leaks. Measured, not guessed.">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="/" aria-label="Ledgerly Support Assistant demo">
+        <span class="brand-mark" aria-hidden="true">L</span>
+        <span>Ledgerly Support Assistant</span>
+      </a>
+      <nav class="top-links" aria-label="Project links">
+        <a id="link-video" class="hidden" href="#" target="_blank" rel="noopener">90-second video</a>
+        <a id="link-readme" href="#" target="_blank" rel="noopener">Failure analysis</a>
+        <a id="link-repo" href="#" target="_blank" rel="noopener">Source code</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <p class="eyebrow">RAG demo · sample data</p>
+      <h1>Ask a support question. Get a cited answer, or an honest “I couldn’t find this”.</h1>
+      <p class="lede">A production-style RAG system on a <strong>fictional</strong> invoicing company’s docs. The knowledge base is messy on purpose: an outdated refund policy, answers that depend on the plan, features that do not exist, and internal staff notes the assistant must never reveal.</p>
+    </section>
+
+    <div class="grid">
+      <section class="panel chat" aria-labelledby="chat-title">
+        <div class="panel-head">
+          <h2 id="chat-title">Try it</h2>
+          <p id="status" class="pill pill-wait" role="status">Starting…</p>
+        </div>
+
+        <div id="log" class="log" role="log" aria-live="polite" aria-label="Conversation">
+          <p class="empty" id="empty">Pick a question below or type your own. Every answer shows which documents it used.</p>
+        </div>
+
+        <form id="composer" class="composer" autocomplete="off">
+          <label for="question" class="sr-only">Your question</label>
+          <textarea id="question" rows="2" maxlength="500" placeholder="e.g. Can I get a refund on my monthly plan renewal?" required></textarea>
+          <div class="composer-row">
+            <span id="count" class="count" aria-hidden="true">0 / 500</span>
+            <button id="send" type="submit" class="btn" disabled>Ask</button>
+          </div>
+        </form>
+
+        <div class="chips" aria-label="Example questions">
+          <p class="chips-title">What each question tests</p>
+          <div id="chips" class="chip-list"></div>
+        </div>
+        <div id="turnstile" class="turnstile"></div>
+      </section>
+
+      <aside class="side" aria-label="About this demo">
+        <section class="panel">
+          <h2>What to look for</h2>
+          <ul class="points">
+            <li><strong>Citations.</strong> Every claim points at a document section, or the answer becomes an abstention.</li>
+            <li><strong>Current policy only.</strong> The old 30-day refund policy and the internal runbook are in the database but filtered out in SQL before ranking.</li>
+            <li><strong>Plan-aware answers.</strong> Limits differ by plan, so the answer must say so.</li>
+            <li><strong>Honest “I don’t know”.</strong> Questions the docs cannot answer are refused, not guessed.</li>
+          </ul>
+        </section>
+
+        <section class="panel">
+          <h2>How it was measured</h2>
+          <p>60 labelled questions, graded by two different LLM judges plus rule-based leak checks. Latest run: <strong>0 leaks</strong>, every refusal and abstention correct, no known wrong answers. That run is in-sample on a small corpus, so read the <a id="link-readme-2" href="#" target="_blank" rel="noopener">failure analysis</a> next to the numbers.</p>
+        </section>
+
+        <section class="panel">
+          <h2>Knowledge base</h2>
+          <ul id="sources" class="sources"><li class="muted">Loads when the demo is awake.</li></ul>
+        </section>
+
+        <section class="panel panel-quiet">
+          <h2>Good to know</h2>
+          <p>The demo runs on free hosting: if nobody used it for a while, opening this page can take up to a minute while the server wakes up. Requests are rate limited and the daily AI budget is capped. Ledgerly is fictional and its documents are sample data.</p>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">Built by Arslan Rana · Python, FastAPI, Postgres + pgvector, Cloudflare Pages</div>
+  </footer>
+
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+  <script src="app.js"></script>
+</body>
+</html>

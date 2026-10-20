@@ -1,25 +1,67 @@
-"""Shared demo API: every portfolio demo mounts its own router under its own prefix (A1 lives at /a1).
+"""Shared demo service: backends and their small web UIs, one free Render instance for all demos.
 
-One service for all demos keeps the free Render instance hours (750 per month) for the demos that are actually used.
+  /demo/a1/   the A1 UI (static files)        /a1/...    the A1 API (docqa router)
+  /session    Turnstile check -> session cookie   /healthz   Render's health check
 """
 from __future__ import annotations
 
 import os
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 # docqa derives the prices.json location from its own install path, which is wrong for a pip-installed package.
 os.environ.setdefault("LLM_PRICES_FILE", str(Path(__file__).resolve().parents[1] / "prices.json"))
 
+from app import guard  # noqa: E402
 from docqa.api import router as a1_router  # noqa: E402  (must come after the environment is prepared)
+
+ROOT = Path(__file__).resolve().parents[1]
+CSP = ("default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; "
+       "connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+       "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
 # No interactive docs or OpenAPI schema on a public API.
 app = FastAPI(title="demo-api", docs_url=None, redoc_url=None, openapi_url=None)
-app.include_router(a1_router, prefix="/a1")
+app.add_middleware(guard.SessionKeyMiddleware)
+
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("Content-Security-Policy", CSP)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+    return response
 
 
 @app.get("/healthz")
 def healthz() -> dict:
     """Render's health check: answers without touching the database or any LLM."""
     return {"status": "ok"}
+
+
+@app.get("/", include_in_schema=False)
+def home() -> RedirectResponse:
+    return RedirectResponse("/demo/a1/")
+
+
+app.add_api_route("/session", guard.create_session, methods=["POST"])
+
+
+@app.get("/demo/a1/config.json", include_in_schema=False)
+def a1_config() -> JSONResponse:
+    """Public UI settings from environment variables, so they can change without a new deploy of the code."""
+    return JSONResponse({
+        "turnstileSiteKey": os.getenv("TURNSTILE_SITE_KEY", "") if guard.enabled() else "",
+        "repoUrl": os.getenv("A1_REPO_URL", "https://github.com/arslandev009/a1-rag-docqa"),
+        "readmeUrl": os.getenv("A1_README_URL", "https://github.com/arslandev009/a1-rag-docqa#failure-analysis"),
+        "videoUrl": os.getenv("DEMO_VIDEO_URL", ""),
+    }, headers={"Cache-Control": "no-store"})
+
+
+app.include_router(a1_router, prefix="/a1", dependencies=[Depends(guard.require_session)])
+app.mount("/demo/a1", StaticFiles(directory=ROOT / "static" / "a1", html=True), name="a1-ui")  # after the explicit routes
