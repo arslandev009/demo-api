@@ -8,14 +8,14 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 # docqa derives the prices.json location from its own install path, which is wrong for a pip-installed package.
 os.environ.setdefault("LLM_PRICES_FILE", str(Path(__file__).resolve().parents[1] / "prices.json"))
 
-from app import guard  # noqa: E402
+from app import diag, guard  # noqa: E402
 from docqa.api import router as a1_router  # noqa: E402  (must come after the environment is prepared)
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -42,6 +42,14 @@ async def security_headers(request: Request, call_next):
 def healthz() -> dict:
     """Render's health check: answers without touching the database or any LLM."""
     return {"status": "ok"}
+
+
+@app.get("/diag", include_in_schema=False)
+def diagnose(request: Request) -> JSONResponse:
+    """Operator-only: checks database, embedding and LLM one by one and reports the real error of each."""
+    if not guard.operator_ok(request.headers.get("x-operator-token")):
+        raise HTTPException(status_code=404, detail="Not Found")  # look like nothing is here
+    return JSONResponse(diag.run_checks(), headers={"Cache-Control": "no-store"})
 
 
 @app.get("/", include_in_schema=False)
