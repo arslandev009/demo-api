@@ -57,7 +57,14 @@
     return data;
   }
 
-  // ---------- Turnstile + session
+  // ---------- Turnstile + session (only when a site key is configured: otherwise no request goes to Cloudflare)
+  function loadTurnstileScript() {
+    if (document.querySelector("script[data-turnstile]")) return;
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.async = true; s.defer = true; s.dataset.turnstile = "1";
+    document.head.appendChild(s);
+  }
   function turnstileToken() {
     return new Promise((resolve, reject) => {
       const started = Date.now();
@@ -218,6 +225,7 @@
     updateControls();
 
     if (cfg.turnstileSiteKey) {
+      loadTurnstileScript();
       setStatus("Verifying you are human…", "wait");
       try { await ensureSession(); } catch (err) { setStatus(err.message, "err"); return; }
     }

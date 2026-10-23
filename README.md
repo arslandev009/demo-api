@@ -5,7 +5,7 @@ Today: **A1** (Ledgerly Support Assistant) from [a1-rag-docqa](https://github.co
 
 ```
 visitor -> /demo/a1/        static UI (HTML/CSS/JS, served by this service)
-        -> POST /session    Cloudflare Turnstile check -> signed 30-minute session cookie
+        -> POST /session    optional visitor check (Cloudflare Turnstile, off unless configured) -> signed session cookie
         -> /a1/chat, /a1/sources, /a1/health   docqa router  ->  Neon Postgres + pgvector
 ```
 

@@ -137,3 +137,17 @@ def test_ui_is_served_with_security_headers_and_root_redirects(make):
     assert c.get("/demo/a1/app.js").status_code == 200 and c.get("/demo/a1/style.css").status_code == 200
     root = c.get("/", follow_redirects=False)
     assert root.status_code in (302, 307) and root.headers["location"] == "/demo/a1/"
+
+
+def test_without_turnstile_nothing_points_at_cloudflare(make):
+    c = make(protected=False)
+    page = c.get("/demo/a1/")
+    assert "cloudflare" not in page.text.lower()
+    assert "cloudflare" not in page.headers["content-security-policy"].lower()
+
+
+def test_with_turnstile_the_csp_allows_cloudflare_and_the_page_still_has_no_script_tag_for_it(make):
+    c = make(protected=True)
+    page = c.get("/demo/a1/")
+    assert "challenges.cloudflare.com" in page.headers["content-security-policy"]
+    assert "<script src=\"https://challenges.cloudflare.com" not in page.text  # injected by app.js only when configured

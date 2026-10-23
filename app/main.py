@@ -19,9 +19,14 @@ from app import diag, guard  # noqa: E402
 from docqa.api import router as a1_router  # noqa: E402  (must come after the environment is prepared)
 
 ROOT = Path(__file__).resolve().parents[1]
-CSP = ("default-src 'self'; script-src 'self' https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; "
-       "connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
-       "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+
+
+def csp() -> str:
+    """Content-Security-Policy. Cloudflare Turnstile is allowed only while it is switched on; otherwise only this origin."""
+    cf = " https://challenges.cloudflare.com" if guard.enabled() else ""
+    return ("default-src 'self'; script-src 'self'" + cf + "; frame-src " + (cf.strip() or "'none'") + "; connect-src 'self'" + cf +
+            "; img-src 'self' data:; style-src 'self' 'unsafe-inline'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
+
 
 # No interactive docs or OpenAPI schema on a public API.
 app = FastAPI(title="demo-api", docs_url=None, redoc_url=None, openapi_url=None)
@@ -31,7 +36,7 @@ app.add_middleware(guard.SessionKeyMiddleware)
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
     response = await call_next(request)
-    response.headers.setdefault("Content-Security-Policy", CSP)
+    response.headers.setdefault("Content-Security-Policy", csp())
     response.headers.setdefault("X-Content-Type-Options", "nosniff")
     response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
