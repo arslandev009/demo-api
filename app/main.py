@@ -17,6 +17,7 @@ os.environ.setdefault("LLM_PRICES_FILE", str(Path(__file__).resolve().parents[1]
 
 from app import diag, guard  # noqa: E402
 from docqa.api import router as a1_router  # noqa: E402  (must come after the environment is prepared)
+from app import a2_demo  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -78,3 +79,4 @@ def a1_config() -> JSONResponse:
 
 app.include_router(a1_router, prefix="/a1", dependencies=[Depends(guard.require_session)])
 app.mount("/demo/a1", StaticFiles(directory=ROOT / "static" / "a1", html=True), name="a1-ui")  # after the explicit routes
+a2_demo.mount(app)  # A2 (invoice extraction): sample demo, operator-only upload router, UI at /demo/a2/
