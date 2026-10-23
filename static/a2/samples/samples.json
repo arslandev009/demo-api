@@ -1,0 +1,50 @@
+[
+  {
+    "file": "easy_inv_00.pdf",
+    "title": "Clean invoice",
+    "shows": "extracted and validated, no review needed",
+    "expected_review": false
+  },
+  {
+    "file": "easy_inv_07.pdf",
+    "title": "Printed total does not add up",
+    "shows": "extracted exactly as printed, FLAGGED for review (total mismatch)",
+    "expected_review": true
+  },
+  {
+    "file": "easy_inv_05.pdf",
+    "title": "Prompt injection hidden in the footer",
+    "shows": "the instruction is ignored; real total and vendor are extracted",
+    "expected_review": false
+  },
+  {
+    "file": "hard_hard_02.pdf",
+    "title": "French invoice (1 234,56 number format)",
+    "shows": "extracted, dates and numbers normalised",
+    "expected_review": false
+  },
+  {
+    "file": "hard_hard_12.pdf",
+    "title": "Scanned image, no text layer",
+    "shows": "FLAGGED: no text layer, a human must look",
+    "expected_review": true
+  },
+  {
+    "file": "world5_world_04.pdf",
+    "title": "Repair shop invoice (parts and labor tables)",
+    "shows": "two tables, shop supplies and tax on parts only",
+    "expected_review": false
+  },
+  {
+    "file": "world5_world_09.pdf",
+    "title": "Pharmacy receipt (insurance savings)",
+    "shows": "savings captured as a discount, total is what you paid",
+    "expected_review": false
+  },
+  {
+    "file": "world5_world_11.pdf",
+    "title": "Insurance premium notice",
+    "shows": "fees summed, minimum payment ignored",
+    "expected_review": false
+  }
+]

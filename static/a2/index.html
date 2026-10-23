@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Invoice Extraction API &middot; demo</title>
+  <meta name="description" content="The model reads the PDF, plain Python re-checks every number, date and identifier. Anything that does not add up is flagged for a human. Sample files only.">
+  <link rel="icon" href="/demo/a1/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/demo/a1/style.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="/" aria-label="Invoice Extraction API demo">
+        <span class="brand-mark" aria-hidden="true">E</span>
+        <span>Invoice Extraction API</span>
+      </a>
+      <nav class="top-links" aria-label="Project links">
+        <a href="/demo/a1/">RAG demo</a>
+        <a id="link-video" class="hidden" href="#" target="_blank" rel="noopener">90-second video</a>
+        <a id="link-readme" href="#" target="_blank" rel="noopener">Failure analysis</a>
+        <a id="link-repo" href="#" target="_blank" rel="noopener">Source code</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <p class="eyebrow">Document extraction demo &middot; sample files only</p>
+      <h1>Pick an invoice. See what the model read, and what the checks caught.</h1>
+      <p class="lede">The model reads the PDF. Plain Python then re-checks every number, date and identifier against the document.
+        If something does not add up, the result is <strong>flagged for a human</strong> instead of being passed on silently.</p>
+    </section>
+
+    <div class="grid">
+      <section class="panel" aria-labelledby="h-samples">
+        <div class="panel-head">
+          <h2 id="h-samples">1. Choose a sample</h2>
+          <p id="status" class="pill pill-wait" role="status">Starting&hellip;</p>
+        </div>
+        <div id="samples" class="samples"></div>
+        <div id="turnstile" class="turnstile"></div>
+      </section>
+
+      <section class="side">
+        <div class="panel" aria-labelledby="h-selected">
+          <h2 id="h-selected">2. Run it</h2>
+          <p id="preview-empty" class="muted">Select a sample on the left to see the document.</p>
+          <figure id="preview" class="preview hidden">
+            <img id="preview-img" alt="" loading="lazy">
+            <figcaption><a id="preview-pdf" href="#" target="_blank" rel="noopener">Open the original PDF</a></figcaption>
+          </figure>
+          <button id="run" class="btn" type="button" disabled>Run extraction</button>
+        </div>
+        <div class="panel panel-quiet">
+          <h2>Why only samples?</h2>
+          <p>Free AI tiers may log what they receive, so real documents are never accepted on this public page.
+            The upload endpoint exists, but it is private.</p>
+        </div>
+      </section>
+    </div>
+
+    <section id="result" class="panel result hidden" aria-live="polite"></section>
+  </main>
+
+  <footer class="foot">
+    <div class="wrap">
+      <p>Fictional and public sample files only. The output is real model output and can differ between runs; a result may be
+        cached for a few minutes. &ldquo;No issues found by the checks&rdquo; means the checks passed, not that the extraction is guaranteed correct.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
