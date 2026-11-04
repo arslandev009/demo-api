@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BrightSmile Dental booking assistant &middot; demo</title>
+<meta name="description" content="Demo of an AI booking assistant for a fictional dental clinic: tool calling, human approval for cancellations, and a live view of every tool call and safety check. Sample data only.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%230E6B6A%27/%3E%3Cpath d=%27M9 11c0-2 2-3 4-3 1.2 0 2 .5 3 .5s1.8-.5 3-.5c2 0 4 1 4 3 0 3-1.2 5-1.8 8-.3 1.6-.8 4-2 4-1.4 0-1.2-4-3.2-4s-1.8 4-3.2 4c-1.2 0-1.7-2.400-2-4C10.200 16 9 14 9 11z%27 fill=%27%23fff%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="shell">
+  <header class="top">
+    <h1>BrightSmile Dental</h1>
+    <p>Booking assistant demo. A fictional clinic with sample data, so please don't type real personal details.</p>
+    <nav aria-label="Project links">
+      <a href="/demo/a1/">RAG demo</a>
+      <a href="/demo/a2/">Invoice demo</a>
+      <a id="link-video" class="hidden" href="#" target="_blank" rel="noopener">Demo video</a>
+      <a id="link-readme" href="#" target="_blank" rel="noopener">Failure analysis</a>
+      <a id="link-repo" href="#" target="_blank" rel="noopener">Source code</a>
+    </nav>
+  </header>
+
+  <details class="notes">
+    <summary>How this demo works</summary>
+    <div>
+      <p><b>Chat</b> is what a patient sees. The assistant can check times, book, look up and ask for a cancellation.</p>
+      <p><b>Behind the scenes</b> lists every tool the assistant used and every safety rule that stopped it.</p>
+      <p><b>Front desk</b> is the clinic staff view. A cancellation is only a request until a person approves it here. You act as the staff for your own chat only.</p>
+      <p>Your chat has its own private calendar. Nobody else can see or change it, and it is forgotten after 30 idle minutes.</p>
+      <p>Try asking for a time the clinic is closed, asking for medical advice, or cancelling an appointment you booked a minute ago.</p>
+      <p id="sampleNote" class="hidden">To try lookups and cancellations of existing bookings, these fictional patients already have an appointment tomorrow:</p>
+      <ul id="samples" class="samples"></ul>
+    </div>
+  </details>
+
+  <div class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" aria-selected="true" data-tab="chat">Chat</button>
+    <button role="tab" aria-selected="false" data-tab="trace">Behind the scenes</button>
+    <button role="tab" aria-selected="false" data-tab="desk">Front desk <span class="badge" id="badge" hidden>0</span></button>
+  </div>
+
+  <div class="layout">
+    <section class="panel chat active" data-panel="chat" aria-label="Chat with the assistant">
+      <h2>Chat with the assistant<small>Replies can take a few seconds. The first message after a quiet period can take up to a minute while the service wakes up.</small></h2>
+      <div id="log" role="log" aria-live="polite" aria-relevant="additions">
+        <div class="empty" id="empty">
+          <h3>Book, check or cancel an appointment</h3>
+          <p>Tell the assistant what you need, or start with one of these.</p>
+          <div class="starters" id="starters">
+            <button type="button">Book a cleaning for tomorrow morning</button>
+            <button type="button">Do you have parking?</button>
+            <button type="button">I need to cancel my appointment</button>
+            <button type="button">Can I come in on Sunday?</button>
+            <button type="button">My tooth hurts. What should I take?</button>
+          </div>
+        </div>
+      </div>
+      <form class="send" id="form">
+        <label for="input" class="sr">Your message</label>
+        <textarea id="input" rows="1" maxlength="1000" placeholder="Type your message" autocomplete="off"></textarea>
+        <button class="btn" id="sendBtn" type="submit" disabled>Send message</button>
+      </form>
+      <div class="chatbar"><span id="status">Starting&hellip;</span><button type="button" class="linkish" id="reset">Start a new chat</button></div>
+      <div id="turnstile" class="turnstile"></div>
+    </section>
+
+    <div class="side">
+      <section class="panel" data-panel="trace" aria-label="Behind the scenes">
+        <h2>Behind the scenes<small>Tools used and safety rules triggered, per reply. No message text is shown here.</small></h2>
+        <p class="hint" id="traceHint">Send a message to see what the assistant did.</p>
+        <div id="trace"></div>
+      </section>
+
+      <section class="panel" data-panel="desk" aria-label="Front desk">
+        <h2>Front desk<small>Cancellation requests from your chat wait here for a person to decide.</small></h2>
+        <div class="desk">
+          <p class="msgline" id="deskMsg" aria-live="polite">No cancellation requests waiting. One appears here after you ask the assistant to cancel an appointment.</p>
+          <button class="btn ghost" type="button" id="refresh">Refresh requests</button>
+          <div id="tickets" style="display:grid;gap:12px"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer>Sample data only. The assistant can be wrong; a clinic would still confirm appointments by phone. It cannot give medical advice. Replies are real model output and can differ between runs.</footer>
+</div>
+<script src="app.js"></script>
+</body>
+</html>

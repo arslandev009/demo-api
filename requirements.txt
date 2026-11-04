@@ -2,3 +2,4 @@ docqa[api] @ git+https://github.com/arslandev009/a1-rag-docqa.git@f2d893f38f80c7
 git+https://github.com/arslandev009/llm-client.git@0415e50337a9006ad2814d55997712156f71469f
 httpx
 a2-extraction @ git+https://github.com/arslandev009/a2-extraction-api.git@2ee6f721c3ca3fc7791680e943e140488622620e
+clinicagent @ git+https://github.com/arslandev009/a3-agent-booking.git@b5ca3e7e4db90ef5fa2e387d6f0a10a2cb8828c7

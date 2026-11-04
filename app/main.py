@@ -1,6 +1,8 @@
 """Shared demo service: backends and their small web UIs, one free Render instance for all demos.
 
   /demo/a1/   the A1 UI (static files)        /a1/...    the A1 API (docqa router)
+  /demo/a2/   the A2 UI                        /a2/...    the A2 API (sample extraction)
+  /demo/a3/   the A3 UI                        /a3/...    the A3 API (clinic booking agent)
   /session    Turnstile check -> session cookie   /healthz   Render's health check
 """
 from __future__ import annotations
@@ -17,7 +19,7 @@ os.environ.setdefault("LLM_PRICES_FILE", str(Path(__file__).resolve().parents[1]
 
 from app import diag, guard  # noqa: E402
 from docqa.api import router as a1_router  # noqa: E402  (must come after the environment is prepared)
-from app import a2_demo  # noqa: E402
+from app import a2_demo, a3_demo  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -80,3 +82,4 @@ def a1_config() -> JSONResponse:
 app.include_router(a1_router, prefix="/a1", dependencies=[Depends(guard.require_session)])
 app.mount("/demo/a1", StaticFiles(directory=ROOT / "static" / "a1", html=True), name="a1-ui")  # after the explicit routes
 a2_demo.mount(app)  # A2 (invoice extraction): sample demo, operator-only upload router, UI at /demo/a2/
+a3_demo.mount(app)  # A3 (clinic booking agent): per-visitor sessions, UI at /demo/a3/
