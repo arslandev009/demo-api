@@ -55,20 +55,21 @@
   }
   function addMsg(kind, who, text, rich) {
     var empty = $("#empty"); if (empty) empty.remove();
-    var m = el("div", "msg " + kind);
-    if (who) m.appendChild(el("div", "who", who));
-    var p = el("p");
+    var m = el("div", "msg " + (kind === "user" ? "msg-user" : kind === "note" ? "msg-bot failed" : "msg-bot"));
+    if (who) m.appendChild(el("p", "who", who));
+    var p = el("p", "msg-text");
     if (rich) richInto(p, text); else p.textContent = text;
     m.appendChild(p);
     $("#log").appendChild(m);
     $("#log").scrollTop = $("#log").scrollHeight;
     return m;
   }
-  function setStatus(text) { $("#status").textContent = text; }
+  function setStatus(text, kind) { var s = $("#status"); s.textContent = text; s.className = "pill pill-" + (kind || "wait"); }
+  function setLeft(text) { $("#left").textContent = text; }
   function updateControls() { $("#sendBtn").disabled = busy || !ready; }
   function setBusy(b) {
     busy = b; updateControls();
-    if (b) setStatus("The assistant is working on your message.");
+    if (b) setStatus("Working\u2026", "wait");
   }
 
   // ---------- network + session (Turnstile only when the server has it switched on)
@@ -199,7 +200,8 @@
       addMsg("note", null, msg);
     } finally {
       setBusy(false);
-      setStatus(left === null ? "Press Enter to send, Shift+Enter for a new line." : left + " messages left in this chat. Enter sends, Shift+Enter adds a line.");
+      setStatus("Ready", "ok");
+      if (left !== null) setLeft(left + " messages left in this chat. Enter sends, Shift+Enter adds a line.");
       $("#input").focus();
     }
   }
@@ -254,29 +256,22 @@
   $("#input").addEventListener("keydown", function (e) {
     if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); send($("#input").value); }
   });
-  $("#log").addEventListener("click", function (e) { if (e.target.closest("#starters") && e.target.tagName === "BUTTON") send(e.target.textContent); });
+  $("#starters").addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) send(b.querySelector("span").textContent); });
   $("#refresh").addEventListener("click", function () { loadQueue(false); });
   var emptyHTML = $("#log").innerHTML;
   $("#reset").addEventListener("click", async function () {
     if (busy) return;
-    try { await withSession(function () { return post(API + "/reset"); }); } catch (e) { setStatus(e.message || "Could not reset. Reload the page."); return; }
+    try { await withSession(function () { return post(API + "/reset"); }); } catch (e) { setStatus(e.message || "Could not reset. Reload the page.", "err"); return; }
     turnNo = 0;
     $("#log").innerHTML = emptyHTML;
     $("#trace").textContent = "";
     $("#tickets").textContent = "";
     setBadge(0);
-    setDeskMsg("No cancellation requests waiting. One appears here after you ask the assistant to cancel an appointment.", false);
+    setDeskMsg("No cancellation requests waiting.", false);
     $("#traceHint").hidden = false;
     $("#traceHint").textContent = "Send a message to see what the assistant did.";
-    setStatus("New chat started with a fresh calendar.");
+    setStatus("Ready", "ok"); setLeft("New chat started with a fresh calendar.");
   });
-  var tabs = document.querySelectorAll(".tabs button");
-  function showTab(name) {
-    tabs.forEach(function (b) { b.setAttribute("aria-selected", String(b.dataset.tab === name)); });
-    document.querySelectorAll("[data-panel]").forEach(function (p) { p.classList.toggle("active", p.dataset.panel === name); });
-  }
-  tabs.forEach(function (b) { b.addEventListener("click", function () { showTab(b.dataset.tab); }); });
-  showTab("chat");
   autosize();
 
   async function init() {
@@ -287,7 +282,7 @@
     if (cfg.turnstileSiteKey) {
       loadTurnstileScript();
       setStatus("Verifying you are human…");
-      try { await ensureSession(); } catch (e) { setStatus(e.message); return; }
+      try { await ensureSession(); } catch (e) { setStatus(e.message, "err"); return; }
     }
     try {
       var info = await withSession(function () { return api(API + "/info"); });
@@ -295,10 +290,9 @@
       (info.samples || []).forEach(function (p) {
         list.appendChild(el("li", null, p.name + ", phone " + p.phone + ", " + p.service));
       });
-      if ((info.samples || []).length) $("#sampleNote").classList.remove("hidden");
-    } catch (e) { setStatus(e.message); return; }
+          } catch (e) { setStatus(e.message, "err"); return; }
     ready = true; updateControls();
-    setStatus("Press Enter to send, Shift+Enter for a new line.");
+    setStatus("Ready", "ok");
   }
   init();
 })();
