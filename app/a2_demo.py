@@ -18,6 +18,7 @@ import logging
 import os
 import threading
 import time
+from contextvars import ContextVar
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -40,6 +41,7 @@ router = APIRouter()
 
 _cache: dict[str, tuple[float, dict]] = {}
 _lock = threading.Lock()
+_used_fallback: ContextVar[bool] = ContextVar("a2_used_fallback", default=False)  # set while the fallback model answers
 
 
 @lru_cache(maxsize=1)
@@ -60,11 +62,34 @@ def get_a2_limiter() -> RateLimiter:
     return RateLimiter(int(os.getenv("A2_RATE_LIMIT_PER_MIN", "6")))
 
 
-@lru_cache(maxsize=4)
-def _llm_for(provider: str) -> Any:
+def _build_llm(provider: str) -> Any:
+    """LLM(provider), plus an optional fallback: A2_FALLBACK_MODEL (and A2_FALLBACK_PROVIDER, default the same provider).
+
+    llm-client retries the main model first (429, 5xx, timeouts) and asks the fallback only when that keeps failing. With a fallback the main
+    model gets one retry instead of three, so a visitor does not wait long. Nothing changes while A2_FALLBACK_MODEL is unset."""
     from llm_client import LLM
 
-    return LLM(provider)
+    fb_model = os.getenv("A2_FALLBACK_MODEL", "").strip()
+    fb_provider = os.getenv("A2_FALLBACK_PROVIDER", "").strip().lower() or provider
+    if not fb_model and fb_provider == provider:
+        return LLM(provider)
+
+    class FlaggedLLM(LLM):
+        def chat(self, messages, **kwargs):
+            _used_fallback.set(True)
+            return super().chat(messages, **kwargs)
+
+    try:
+        fallback = FlaggedLLM(fb_provider, model=fb_model or None)
+    except Exception:  # noqa: BLE001  a broken fallback setting must never take the main model down
+        log.exception("a2 fallback LLM could not be created; running without it")
+        return LLM(provider)
+    return LLM(provider, fallback=fallback, max_retries=1)
+
+
+@lru_cache(maxsize=4)
+def _llm_for(provider: str) -> Any:
+    return _build_llm(provider)
 
 
 def get_llm_factory() -> Any:
@@ -124,6 +149,7 @@ def extract_sample(body: ExtractIn, request: Request, limiter: RateLimiter = Dep
         raise HTTPException(status_code=503, detail="The demo's daily AI budget is used up. Try again tomorrow.")
 
     provider = rt.config.default_provider
+    _used_fallback.set(False)
     try:
         res = process_pdf(data, llm_for(provider), max_pages=5, default_currency=os.getenv("DEFAULT_CURRENCY") or None)
     except Exception:  # noqa: BLE001  never leak internals to the visitor
@@ -131,14 +157,16 @@ def extract_sample(body: ExtractIn, request: Request, limiter: RateLimiter = Dep
         raise HTTPException(status_code=503, detail="The extraction service is temporarily unavailable.") from None
 
     calls = llm_calls(res)
+    used_fallback = _used_fallback.get()
     rt.budget.add(calls)
-    log.info("a2 sample=%s provider=%s llm_calls=%s review=%s latency=%sms", body.sample, provider, calls, res.needs_review, res.latency_ms)
+    log.info("a2 sample=%s provider=%s fallback=%s llm_calls=%s review=%s latency=%sms", body.sample, provider, used_fallback, calls,
+             res.needs_review, res.latency_ms)
     # Same rule as A2's own router: only a model failure (error set, nothing else found) is a provider error.
     if res.extraction is None and res.error and res.pages > 0 and not res.issues:
         raise HTTPException(status_code=502, detail="The AI provider failed. Try again in a minute.")
 
     payload = {"sample": body.sample, "title": sample["title"], "provider": provider, "llm_calls": calls,
-               "result": res.model_dump(), "cached": False, "age_s": 0}
+               "fallback_used": used_fallback, "result": res.model_dump(), "cached": False, "age_s": 0}
     with _lock:
         _cache[body.sample] = (now, payload)
     return payload

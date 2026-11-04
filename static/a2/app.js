@@ -227,6 +227,7 @@
     const parts = [plural(Number(res.pages || 0), "page"), `${Number(res.latency_ms || 0)} ms`];
     parts.push(data.llm_calls === 0 ? "no AI call" : plural(Number(data.llm_calls || 0), "AI call"));
     if (data.provider) parts.push(String(data.provider));
+    if (data.fallback_used) parts.push("answered by the fallback model");
     if (data.cached) parts.push(`cached result, ${Number(data.age_s || 0)} s old (latency is from the original run)`);
     resultEl.appendChild(el("p", "meta", parts.join(" \u00b7 ")));
 
